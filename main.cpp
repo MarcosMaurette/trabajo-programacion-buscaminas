@@ -13,7 +13,7 @@ void partida(RenderWindow& window){
     unsigned int resx = 1920;
     unsigned int resy = 1080;
 
-    sf::Font font;
+    Font font;
     font.openFromFile("fuente.TTF");
 
     // cargar texturas
@@ -34,31 +34,64 @@ void partida(RenderWindow& window){
         cout << "Error cargando bloque.png" << endl;
         return;
     }
-    sf::Clock reloj;
+    Texture texturaFondo;
+    if (!texturaFondo.loadFromFile("img/fondo.png")) {
+        cout << "Error cargando fondo.png" << endl;
+        return;
+    }
 
-    sf::Text textoTimer(font, "", 24);
-    textoTimer.setPosition({10.f, 10.f});
-    textoTimer.setFillColor(sf::Color::White);
+    Sprite fondo(texturaFondo);
+    sf::Vector2u tamFondo = texturaFondo.getSize();
+    sf::Vector2u tamVentana = window.getSize();
+
+    fondo.setScale(sf::Vector2f(
+        static_cast<float>(tamVentana.x) / tamFondo.x,
+        static_cast<float>(tamVentana.y) / tamFondo.y
+    ));
+
+    Clock reloj;
+
+    Text textoTimer(font, "", 30);
+    textoTimer.setPosition(Vector2f(150, resy-100));
+    textoTimer.setFillColor(Color::White);
 
     vector<Sprite> botones;
-    int cantCuadradosX = 10;
-    int cantCuadradosY = 10;
+    int cantCuadradosX = 13;
+    int cantCuadradosY = 13;
 
+    float tamCuadrado = 60.f;
+    float separacion = 3.f;
+    float paso = tamCuadrado + separacion;
+
+    // Calcular el tamaño total del tablero
+    float anchoTablero = cantCuadradosX * tamCuadrado
+                       + (cantCuadradosX - 1) * separacion;
+
+    float altoTablero = cantCuadradosY * tamCuadrado
+                      + (cantCuadradosY - 1) * separacion;
+
+    // Centrar el tablero horizontalmente
+    float inicioX = (window.getSize().x - anchoTablero) / 2.f;
+
+    // Centrar verticalmente en el espacio disponible arriba del HUD
+    float altoDisponible = 830.f;
+    float inicioY = (altoDisponible - altoTablero) / 2.f;
 
     for (int i = 0; i < cantCuadradosX; i++) {
         for (int j = 0; j < cantCuadradosY; j++) {
 
-            sf::Sprite boton(texturaBloque);
+            Sprite boton(texturaBloque);
 
             Vector2u tam = texturaBloque.getSize();
 
-            float escalaX = 60.f / tam.x;
-            float escalaY = 60.f / tam.y;
+            float escalaX = tamCuadrado / tam.x;
+            float escalaY = tamCuadrado / tam.y;
 
             boton.setScale({escalaX, escalaY});
+
             boton.setPosition({
-                resx / 3.f + i * 65.f,
-                100.f + 65.f * j
+                inicioX + i * paso,
+                inicioY + j * paso
             });
 
             botones.push_back(boton);
@@ -68,7 +101,7 @@ void partida(RenderWindow& window){
 
     vector<bool> banderaActiva(botones.size(), false);
 
-    uniform_int_distribution<int> distBomb(1, 10);
+    uniform_int_distribution<int> distBomb(5, 15);
     int cantBombas = distBomb(gen);
 
     vector<int> indices(botones.size());
@@ -99,17 +132,17 @@ void partida(RenderWindow& window){
 
     Vector2u tamHud = texturaHud.getSize();
 
-    float escalaHudX = 1820.f / tamHud.x;
-    float escalaHudY = 200.f / tamHud.y;
+    float escalaHudX = 1920.f / tamHud.x;
+    float escalaHudY = 250.f / tamHud.y;
 
     hud.setScale({escalaHudX, escalaHudY});
-    hud.setPosition({50, 880.f});
+    hud.setPosition({0, 830.f});
     // texto
     Text texto(font, "CANTIDAD DE BOMBAS: " + to_string(cantBombas), 30);
-    texto.setPosition(Vector2f(200, resy-60));
+    texto.setPosition(Vector2f(150, resy-60));
     Sprite bombaHud(texturaBomba);
     bombaHud.setScale({escalaX*0.7, escalaY*0.7});
-    bombaHud.setPosition(Vector2f(600, resy-60));
+    bombaHud.setPosition(Vector2f(550, resy-60));
 
     while (window.isOpen()) {
         while (const optional event = window.pollEvent()) {
@@ -171,10 +204,11 @@ void partida(RenderWindow& window){
         }
 
         float segundos = reloj.getElapsedTime().asSeconds();
-        textoTimer.setString("Tiempo: " + to_string((int)segundos));
+        textoTimer.setString("TIEMPO: " + to_string((int)segundos));
 
         // acá dibujás tus objetos
-        window.clear(sf::Color::Black);
+        window.clear(Color(24, 33, 43));
+        window.draw(fondo);
         window.draw(hud);
         window.draw(textoTimer);
         window.draw(texto);
@@ -200,6 +234,10 @@ void partida(RenderWindow& window){
         window.display();
     }
 }
+void gameover(){
+
+}
+
 
 int main() {
     random_device rd;
@@ -209,15 +247,34 @@ int main() {
     unsigned int resy = 1080;
 
     RenderWindow window(VideoMode::getDesktopMode(), "Buscaminas", State::Fullscreen);
-    sf::Font font;
+    Font font;
     font.openFromFile("fuente.TTF");
 
-    sf::RectangleShape rectangle(sf::Vector2f(100.f, 50.f));
-    rectangle.setPosition(Vector2f((resx - 100) / 2.f, 300.f));
-    rectangle.setFillColor(sf::Color::Red);
+    RectangleShape rectangle(Vector2f(250.f, 50.f));
+    rectangle.setPosition(Vector2f((resx - 250) / 2.f, 300.f));
+    rectangle.setFillColor(Color(255, 107, 53));
 
-    Text texto(font, "Jugar", 24);
-    texto.setPosition(Vector2f((resx - 100) / 2.f, 300.f));
+    RectangleShape rectangle2(Vector2f(250.f, 50.f));
+    rectangle2.setPosition(Vector2f((resx - 250) / 2.f, 390.f));
+    rectangle2.setFillColor(Color(255, 107, 53));
+
+    Text titulo(font, "MINESWEEPER: ELEMENTAL TACTICS", 48);
+    titulo.setPosition(Vector2f(
+        (resx - titulo.getLocalBounds().size.x) / 2.f,
+        210.f
+    ));
+
+    Text textoNuevaPartida(font, "Nueva partida", 24);
+    textoNuevaPartida.setPosition(Vector2f(
+        (resx - textoNuevaPartida.getLocalBounds().size.x) / 2.f,
+        310.f
+    ));
+    Text textoRanking(font, "Ranking", 24);
+    textoRanking.setPosition(Vector2f(
+        (resx - textoRanking.getLocalBounds().size.x) / 2.f,
+        300.f + 100
+    ));
+
 
     while (window.isOpen()) {
         while (const optional event = window.pollEvent()) {
@@ -235,9 +292,12 @@ int main() {
             }
         }
 
-        window.clear(sf::Color::Black);
+        window.clear(Color(24, 33, 43));
         window.draw(rectangle);
-        window.draw(texto);
+        window.draw(rectangle2);
+        window.draw(textoNuevaPartida);
+        window.draw(textoRanking);
+        window.draw(titulo);
         window.display();
     }
 
